@@ -2,11 +2,9 @@
 
 Projeto de um reprodutor de melodias monofônicas para a disciplina **CCP020 — Digital Experience Ultimate**, do professor Isaac. O sistema utiliza Arduino UNO, LCD 16×2 I2C, quatro botões, dois LEDs e um buzzer passivo.
 
-> **Antes da entrega:** substitua os campos entre colchetes, acrescente fotos e vídeos reais e registre somente testes efetivamente realizados. Este README é um rascunho para revisão dos integrantes, não um registro de experimentos já comprovados.
 
 **Integrantes:**
-- [Nome do integrante 1 — matrícula]
-- [Nome do integrante 2 — matrícula, se houver]
+- Felipe Nunes Recupero — RA: 22.126.033-4
 
 ## 1. Introdução
 
@@ -73,9 +71,6 @@ Cada LED deve ter um resistor em série e o cátodo ligado ao GND. O terminal ne
 5. Conectar o buzzer passivo ao D10 e ao GND.
 6. Conferir as conexões antes de iniciar a simulação ou alimentar a placa física.
 
-**Foto da montagem:** [Inserir foto ou captura real e sua legenda.]
-
-**Circuito no Tinkercad:** [Inserir link compartilhável, se disponível.]
 
 ### 2.4. Organização do software
 
@@ -139,17 +134,9 @@ A tabela abaixo é um **roteiro de testes**. Preencha a coluna de resultado some
 
 ### Evidências
 
-Organize fotos e vídeos em uma sequência que permita acompanhar o funcionamento:
 
 1. **Montagem geral:** [Inserir foto real e explicar as conexões principais.]
-2. **Menu e navegação:** [Inserir foto ou vídeo real da mudança de seleção.]
-3. **Reprodução:** [Inserir vídeo com áudio e LED verde visível.]
-4. **Pausa e retomada:** [Inserir vídeo mostrando o LED vermelho e a continuidade da melodia.]
-5. **Stop e finalização:** [Inserir vídeo mostrando o retorno ao menu.]
 
-**Ambiente testado:** [Tinkercad, placa física ou ambos.]
-
-**Observações sobre áudio:** [Registrar ruídos, interrupções, alterações de notas e diferenças entre a simulação e a montagem física, se observados.]
 
 A saída de `tone()` é uma onda quadrada; portanto, o timbre do buzzer não equivale ao de um instrumento musical. Qualidade sonora, ruídos e estabilidade devem ser avaliados no ambiente efetivamente utilizado.
 
@@ -172,20 +159,11 @@ A solução implementada integra seleção de melodias, reprodução monofônica
 
 O uso de `millis()` permite controlar a duração das notas sem bloquear a consulta aos botões. O armazenamento em FLASH preserva a SRAM limitada do Arduino UNO, e o debounce reduz eventos indesejados causados pela oscilação dos contatos.
 
-**Validação final:** [Descrever quais funcionalidades foram confirmadas nos testes, quais dificuldades ocorreram, como foram resolvidas e quais limitações permaneceram. Não declarar sucesso em testes ainda não realizados.]
-
 Como melhorias futuras, podem ser considerados controle de volume com circuito apropriado, ajuste de andamento e ampliação da biblioteca musical.
 
 ## 7. Versionamento e participação
 
 Manter o repositório privado e adicionar os integrantes como colaboradores, conforme as orientações do projeto. Cada participante deve registrar contribuições próprias por meio de commits que representem a evolução real do trabalho.
 
-**Contribuições:**
-- [Integrante 1: atividades efetivamente realizadas.]
-- [Integrante 2: atividades efetivamente realizadas, se houver.]
-
-## 8. Uso de inteligência artificial
-
-Foi utilizada assistência de IA na elaboração e revisão de trechos de código e deste rascunho de documentação. Os integrantes devem revisar, compreender, adaptar e validar o material antes da entrega, observando as regras da disciplina. Fotos, vídeos e resultados experimentais devem ser produzidos a partir do circuito real ou da simulação efetivamente executada.
 
 [Complementar com uma descrição fiel do uso de IA e da revisão realizada pela equipe.]
