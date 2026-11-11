@@ -1,0 +1,321 @@
+// CCP020 - Reprodutor musical para Arduino UNO / Arduino IDE
+// Salve o sketch como reprodutor_ccp020.ino.
+// Na IDE, instale a biblioteca Adafruit LiquidCrystal pelo Gerenciador
+// de Bibliotecas e aceite instalar as dependencias solicitadas.
+// Selecione a placa Arduino Uno e a porta da placa antes de carregar.
+//
+// LCD: esta versao usa expansor MCP23008 em 0x20, como no Tinkercad.
+// ATENCAO: LCDs fisicos com PCF8574 (comuns em 0x27/0x3F) precisam
+// de outra biblioteca/driver; mudar somente o endereco nao resolve.
+// LCD: VCC -> 5V; GND -> GND; SDA -> A4; SCL -> A5.
+// Botoes INPUT_PULLUP: pressionado = LOW; ligar cada botao ao GND.
+// LEDs: usar resistor em serie (220 a 330 ohms), catodo ao GND.
+// Usar piezo/buzzer PASSIVO: positivo no pino 10, negativo ao GND.
+// Nao ligar alto-falante de baixa impedancia diretamente ao Arduino.
+// Revise, teste e compreenda o codigo antes da apresentacao.
+
+// Cabecalhos usados nesta versao para o Tinkercad.
+// O ambiente Arduino ja inclui Arduino.h automaticamente.
+#include <Adafruit_LiquidCrystal.h>
+#include <avr/pgmspace.h>
+
+// 0 = endereco padrao do expansor MCP23008 (0x20).
+// Nao e o endereco 0x27 de modulos PCF8574.
+Adafruit_LiquidCrystal lcd(0);
+
+// Pinagem informada pelo usuario. Confira os terminais no circuito.
+const byte PIN_UP = 5;
+const byte PIN_DOWN = 4;
+const byte PIN_PLAY = 3;
+const byte PIN_STOP = 2;
+const byte PIN_LED_VERDE = 9;
+const byte PIN_LED_VERMELHO = 8;
+const byte PIN_BUZZER = 10;
+
+// Frequencias sem nomes A4/A5, pois esses nomes ja identificam pinos.
+const uint16_t DO4 = 262;
+const uint16_t RE4 = 294;
+const uint16_t MI4 = 330;
+const uint16_t FA4 = 349;
+const uint16_t SOL4 = 392;
+const uint16_t LA4 = 440;
+const uint16_t SI4 = 494;
+const uint16_t DO5 = 523;
+const uint16_t RE5 = 587;
+const uint16_t MI5 = 659;
+const uint16_t SOL3 = 196;
+
+struct Nota {
+  uint16_t frequencia;
+  uint16_t duracao;  // Tempo total da nota, em milissegundos.
+};
+
+// Cinco novas melodias monofonicas, com ritmos e contornos distintos.
+// Os nomes internos dos vetores foram preservados por compatibilidade;
+// as melodias abaixo NAO sao mais os arranjos das cancoes anteriores.
+// Cada par representa {frequencia em Hz, duracao em ms}; 0 = silencio.
+// Todos os vetores continuam na FLASH com PROGMEM.
+
+// Musica1: arpejos em Do maior, andamento moderado.
+const Nota parabens[] PROGMEM = {
+  {523,360},{659,360},{784,360},{659,360},
+  {587,360},{698,360},{880,540},{784,540},
+  {659,360},{784,360},{1047,720},{988,360},
+  {880,360},{784,360},{659,360},{587,360},{523,1080}
+};
+
+// Musica2: nova melodia em registro mais grave (262 a 392 Hz).
+const Nota brilha[] PROGMEM = {
+  {262,600},{330,600},{294,600},{262,900},{0,150},
+  {294,600},{349,600},{330,600},{294,900},{0,150},
+  {330,600},{392,600},{349,600},{330,900},{0,150},
+  {294,600},{330,600},{294,600},{262,1200}
+};
+
+// Musica3: motivo agudo e mais rapido, com sincopas.
+const Nota alegria[] PROGMEM = {
+  {784,240},{988,240},{1175,480},{988,240},{880,480},
+  {784,240},{880,240},{988,480},{659,480},{0,120},
+  {740,240},{880,240},{1047,480},{880,240},{784,480},
+  {740,240},{659,240},{587,480},{784,960}
+};
+
+// Musica4: ritmo ternario, com notas mais longas no inicio da frase.
+const Nota freiJacques[] PROGMEM = {
+  {698,600},{880,300},{1047,300},
+  {932,600},{784,300},{698,300},
+  {659,600},{784,300},{1047,300},
+  {880,900},{0,300},
+  {587,600},{698,300},{880,300},
+  {784,600},{659,300},{523,300},
+  {587,600},{659,300},{784,300},{698,1200}
+};
+
+// Musica5: sequencia pentatonica com saltos e resposta descendente.
+const Nota londonBridge[] PROGMEM = {
+  {659,280},{880,280},{988,560},{1319,560},
+  {1175,280},{988,280},{880,560},{0,140},
+  {988,280},{1175,280},{1319,840},{1175,280},
+  {988,280},{880,280},{784,560},{659,560},
+  {784,280},{880,280},{988,560},{784,280},{659,1120}
+};
+
+// Nomes tambem na memoria de programa.
+const char nomes[5][17] PROGMEM = {
+  "Musica1",
+  "Musica2",
+  "Musica3",
+  "Musica4",
+  "Musica5"
+};
+
+struct Musica {
+  const Nota* notas;
+  uint16_t quantidade;
+};
+
+const Musica biblioteca[] PROGMEM = {
+  {parabens, sizeof(parabens) / sizeof(parabens[0])},
+  {brilha, sizeof(brilha) / sizeof(brilha[0])},
+  {alegria, sizeof(alegria) / sizeof(alegria[0])},
+  {freiJacques, sizeof(freiJacques) / sizeof(freiJacques[0])},
+  {londonBridge, sizeof(londonBridge) / sizeof(londonBridge[0])}
+};
+const byte TOTAL_MUSICAS = sizeof(biblioteca) / sizeof(biblioteca[0]);
+
+enum Estado { MENU, TOCANDO, PAUSADO };
+Estado estado = MENU;
+byte selecionada = 0;
+Musica musicaAtual;
+Nota notaAtual;
+uint16_t indiceNota = 0;
+unsigned long inicioNota = 0;
+unsigned long instantePausa = 0;
+bool somLigado = false;
+
+// Debounce real: a leitura precisa permanecer estavel por 30 ms.
+struct Botao {
+  byte pino;
+  byte leituraAnterior;
+  byte estadoEstavel;
+  unsigned long ultimaMudanca;
+};
+
+// Prototipo explicito depois da definicao de Botao.
+// Evita que o preprocessador Arduino gere este prototipo antes do tipo.
+bool foiPressionado(Botao &botao);
+
+Botao botaoUp = {PIN_UP, HIGH, HIGH, 0};
+Botao botaoDown = {PIN_DOWN, HIGH, HIGH, 0};
+Botao botaoPlay = {PIN_PLAY, HIGH, HIGH, 0};
+Botao botaoStop = {PIN_STOP, HIGH, HIGH, 0};
+
+bool foiPressionado(Botao &botao) {
+  const byte leitura = digitalRead(botao.pino);
+  const unsigned long agora = millis();
+  if (leitura != botao.leituraAnterior) {
+    botao.leituraAnterior = leitura;
+    botao.ultimaMudanca = agora;
+  }
+  if (agora - botao.ultimaMudanca >= 30 && leitura != botao.estadoEstavel) {
+    botao.estadoEstavel = leitura;
+    return leitura == LOW;
+  }
+  return false;
+}
+
+void atualizarLeds() {
+  digitalWrite(PIN_LED_VERDE, estado == TOCANDO ? HIGH : LOW);
+  digitalWrite(PIN_LED_VERMELHO, estado == PAUSADO ? HIGH : LOW);
+}
+
+void escreverNome(byte numero) {
+  char buffer[17];
+  memcpy_P(buffer, nomes[numero], sizeof(buffer));
+  buffer[16] = '\0';
+  lcd.print(buffer);
+}
+
+void mostrarMenu() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print('>');
+  escreverNome(selecionada);
+  lcd.setCursor(0, 1);
+  lcd.print(' ');
+  escreverNome((selecionada + 1) % TOTAL_MUSICAS);
+}
+
+void mostrarReproducao() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  if (estado == PAUSADO) lcd.print(F("Pausado"));
+  else lcd.print(F("Tocando"));
+  lcd.setCursor(0, 1);
+  escreverNome(selecionada);
+}
+
+// Pequena articulacao fixa: evita os cortes longos de 10% por nota.
+// Uma nota de 900 ms agora tem apenas 8 ms de silencio, nao 90 ms.
+const uint16_t INTERVALO_NOTAS_MS = 8;
+
+unsigned long duracaoSom() {
+  if (notaAtual.duracao <= INTERVALO_NOTAS_MS) {
+    return notaAtual.duracao;
+  }
+  return notaAtual.duracao - INTERVALO_NOTAS_MS;
+}
+
+void silenciar() {
+  noTone(PIN_BUZZER);
+  somLigado = false;
+}
+
+void carregarNota() {
+  memcpy_P(&notaAtual, musicaAtual.notas + indiceNota, sizeof(Nota));
+  // Evita chamar noTone() desnecessariamente antes de cada tone().
+  // O silencio de articulacao e controlado em atualizarReproducao().
+  if (notaAtual.frequencia > 0) {
+    tone(PIN_BUZZER, notaAtual.frequencia);
+    somLigado = true;
+  } else {
+    silenciar();
+  }
+}
+
+void voltarAoMenu() {
+  silenciar();
+  estado = MENU;
+  indiceNota = 0;
+  atualizarLeds();
+  mostrarMenu();
+}
+
+void iniciarMusica() {
+  memcpy_P(&musicaAtual, &biblioteca[selecionada], sizeof(Musica));
+  indiceNota = 0;
+  estado = TOCANDO;
+  atualizarLeds();
+  mostrarReproducao();
+  inicioNota = millis();
+  carregarNota();
+}
+
+void pausarOuRetomar() {
+  if (estado == TOCANDO) {
+    instantePausa = millis();
+    estado = PAUSADO;
+    silenciar();
+  } else if (estado == PAUSADO) {
+    // Desconta a pausa do tempo transcorrido da nota.
+    inicioNota += millis() - instantePausa;
+    estado = TOCANDO;
+    if (notaAtual.frequencia > 0 && millis() - inicioNota < duracaoSom()) {
+      tone(PIN_BUZZER, notaAtual.frequencia);
+      somLigado = true;
+    }
+  }
+  atualizarLeds();
+  mostrarReproducao();
+}
+
+void atualizarReproducao() {
+  if (estado != TOCANDO) return;
+  const unsigned long decorrido = millis() - inicioNota;
+  if (somLigado && decorrido >= duracaoSom()) silenciar();
+  if (decorrido >= notaAtual.duracao) {
+    // Mantem o ritmo: nao acumula o atraso de cada passagem pelo loop.
+    inicioNota += notaAtual.duracao;
+    indiceNota++;
+    if (indiceNota >= musicaAtual.quantidade) {
+      voltarAoMenu();  // Fim da musica: sem repeticao automatica.
+    } else {
+      carregarNota();
+    }
+  }
+}
+
+void setup() {
+  pinMode(PIN_UP, INPUT_PULLUP);
+  pinMode(PIN_DOWN, INPUT_PULLUP);
+  pinMode(PIN_PLAY, INPUT_PULLUP);
+  pinMode(PIN_STOP, INPUT_PULLUP);
+  pinMode(PIN_LED_VERDE, OUTPUT);
+  pinMode(PIN_LED_VERMELHO, OUTPUT);
+  pinMode(PIN_BUZZER, OUTPUT);
+
+  lcd.begin(16, 2);
+  lcd.setBacklight(HIGH);
+  silenciar();
+  atualizarLeds();
+  mostrarMenu();
+}
+
+void loop() {
+  // Todos os botoes sao atualizados em todos os estados.
+  const bool up = foiPressionado(botaoUp);
+  const bool down = foiPressionado(botaoDown);
+  const bool play = foiPressionado(botaoPlay);
+  const bool stop = foiPressionado(botaoStop);
+
+  // Stop tem prioridade, inclusive se houver cliques simultaneos.
+  if (stop) {
+    voltarAoMenu();
+    return;
+  }
+
+  if (estado == MENU) {
+    if (up) {
+      selecionada = (selecionada + TOTAL_MUSICAS - 1) % TOTAL_MUSICAS;
+      mostrarMenu();
+    } else if (down) {
+      selecionada = (selecionada + 1) % TOTAL_MUSICAS;
+      mostrarMenu();
+    }
+    if (play) iniciarMusica();
+  } else if (play) {
+    pausarOuRetomar();
+  }
+
+  atualizarReproducao();
+}
