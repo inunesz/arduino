@@ -1,6 +1,6 @@
 # Reprodutor de Músicas com Arduino UNO
 
-**CCP020 – Digital Experience Ultimate** · Centro Universitário FEI · Prof. Isaac
+**CCP020 – Digital Experience Ultimate** · Centro Universitário FEI ·
 
 **Integrantes:** Felipe Nunes Recupero RA:22.126.033-4
 
