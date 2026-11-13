@@ -1,169 +1,238 @@
-# Reprodutor musical com Arduino UNO — CCP020
+# Reprodutor de Músicas com Arduino UNO
 
-Projeto de um reprodutor de melodias monofônicas para a disciplina **CCP020 — Digital Experience Ultimate**, do professor Isaac. O sistema utiliza Arduino UNO, LCD 16×2 I2C, quatro botões, dois LEDs e um buzzer passivo.
+**CCP020 – Digital Experience Ultimate** · Centro Universitário FEI · Prof. Isaac
 
+**Integrantes:** Felipe Nunes Recupero RA:22.126.033-4
 
-**Integrantes:**
-- Felipe Nunes Recupero — RA: 22.126.033-4
+---
 
 ## 1. Introdução
 
-O projeto aborda a construção de uma interface simples para selecionar e reproduzir músicas em um sistema embarcado com recursos limitados. O usuário navega por uma biblioteca de cinco melodias, acompanha a seleção pelo LCD e controla a execução por botões físicos.
+### 1.1 Problema
 
-O objetivo é integrar interface, geração de áudio e controle de estados sem bloquear a leitura dos botões. Outro objetivo é preservar a memória RAM do Arduino UNO, armazenando as sequências musicais e seus nomes na memória FLASH com `PROGMEM`.
+Aparelhos como os antigos MP3 players permitem escolher uma música em uma lista, tocá-la, pausá-la e voltar ao menu. O desafio deste projeto é reproduzir esse comportamento em um sistema embarcado simples, usando um Arduino UNO, que tem apenas **2 KB de RAM** e nenhum cartão de memória: as músicas precisam caber na própria memória do microcontrolador.
 
-### Funcionalidades implementadas no código
+### 1.2 Objetivos
 
-- Biblioteca com cinco melodias, identificadas como **Musica1** a **Musica5**.
-- Menu de seleção com navegação circular por UP e DOWN.
-- Reprodução de uma nota por vez no buzzer passivo.
-- Play/Pause para iniciar, pausar e retomar a reprodução.
-- Stop para interromper e retornar ao menu.
-- LED verde durante a reprodução e vermelho durante a pausa.
-- Retorno automático ao menu quando a melodia termina.
-- Tratamento de oscilações dos botões por debounce de 30 ms.
+- Armazenar **no mínimo 5 músicas** na memória do Arduino.
+- Listar os nomes das músicas em um **display LCD 16x2** e permitir a seleção com os botões **UP** e **DOWN**.
+- Tocar a música escolhida em um **buzzer** ao pressionar **PLAY**.
+- Permitir **pausar/retomar** (botão PLAY/PAUSE) e **interromper** a música voltando ao menu (botão STOP).
+- Indicar o estado com LEDs: **verde** enquanto toca e **vermelho** quando pausada.
+
+---
 
 ## 2. Metodologia
 
-### 2.1. Materiais
+### 2.1 Materiais utilizados
 
-| Quantidade | Componente | Observação |
-|---|---|---|
-| 1 | Arduino UNO | Plataforma de controle |
-| 1 | LCD 16×2 I2C | Configuração do código: expansor MCP23008 em 0x20 |
-| 4 | Push buttons | UP, DOWN, Play/Pause e Stop |
-| 1 | Buzzer passivo ou piezo | Reprodução por `tone()` |
-| 1 | LED verde | Indica reprodução |
-| 1 | LED vermelho | Indica pausa |
-| 2 | Resistores de 220 a 330 Ω | Um em série com cada LED |
-| 1 | Protoboard | Montagem das conexões |
-| Conforme necessário | Jumpers | Interligação dos componentes |
-| 1 | Cabo USB | Necessário para programação da placa física |
+| Qtd. | Componente | Função no projeto |
+|:---:|---|---|
+| 1 | Arduino UNO R3 | Microcontrolador que executa o programa |
+| 1 | Display LCD 16x2 com módulo I2C | Mostra o menu e o estado da reprodução |
+| 4 | Botões (push button) | UP, DOWN, PLAY/PAUSE e STOP |
+| 1 | LED verde | Indica "tocando" |
+| 1 | LED vermelho | Indica "pausado" |
+| 2 | Resistores de 220 Ω (faixa de 220 a 330 Ω) | Limitam a corrente dos LEDs |
+| 1 | Buzzer **passivo** | Reproduz as notas |
+| 1 | Protoboard | Montagem dos componentes |
+| — | Fios (jumpers) | Conexões |
 
-### 2.2. Pinagem
+> O buzzer precisa ser **passivo**: o buzzer ativo emite um único tom fixo e não toca melodias.
 
-| Componente | Pino do Arduino UNO |
-|---|---|
+### 2.2 Métodos
+
+#### Esquema de ligação
+
+| Componente | Pino do Arduino |
+|---|:---:|
 | Botão UP | D5 |
 | Botão DOWN | D4 |
-| Botão Play/Pause | D3 |
-| Botão Stop | D2 |
-| LED verde | D9 |
-| LED vermelho | D8 |
-| Buzzer passivo — positivo | D10 |
-| LCD — SDA | A4 |
-| LCD — SCL | A5 |
-| LCD — VCC | 5 V |
-| LCD — GND | GND |
+| Botão PLAY/PAUSE | D3 |
+| Botão STOP | D2 |
+| LED verde (via resistor) | D9 |
+| LED vermelho (via resistor) | D8 |
+| Buzzer (+) | D10 |
+| LCD I2C – SDA | A4 |
+| LCD I2C – SCL | A5 |
+| LCD I2C – VCC / GND | 5V / GND |
 
-Os botões utilizam `INPUT_PULLUP`: cada um deve conectar seu pino ao **GND quando pressionado**. Assim, a leitura é `HIGH` em repouso e `LOW` durante o acionamento, sem necessidade de resistores externos para os botões.
+- Cada botão tem um terminal no pino do Arduino e o outro no **GND**. Os pinos usam `INPUT_PULLUP`, então o botão pressionado é lido como `LOW` e **não é necessário resistor externo**.
+- Os LEDs têm o cátodo ligado ao GND e o ânodo ligado ao pino por meio do resistor.
+- O buzzer tem o terminal negativo no GND.
+- Todos os GNDs (LCD, LEDs, botões e buzzer) estão ligados ao GND do Arduino.
 
-Cada LED deve ter um resistor em série e o cátodo ligado ao GND. O terminal negativo do buzzer deve ir ao GND. Todos os componentes precisam compartilhar o mesmo GND do Arduino.
+**Foto do projeto montado:**
 
-> Não conecte um alto-falante de baixa impedância diretamente ao pino do Arduino. O circuito descrito utiliza piezo ou buzzer passivo.
-
-### 2.3. Montagem
-
-1. Conectar a alimentação e o GND do circuito.
-2. Conectar o LCD ao barramento I2C, usando A4 para SDA e A5 para SCL.
-3. Conectar os quatro botões entre seus respectivos pinos e GND.
-4. Montar os LEDs com resistores em série.
-5. Conectar o buzzer passivo ao D10 e ao GND.
-6. Conferir as conexões antes de iniciar a simulação ou alimentar a placa física.
+![Projeto montado](imagens/projeto-montado.jpg)
+<!-- [PREENCHER] Foto do seu circuito montado -->
 
 
-### 2.4. Organização do software
+#### Desenvolvimento do software
 
-O programa é organizado em três estados:
+O código está em [`reprodutor_ccp020.ino`](reprodutor_ccp020/reprodutor_ccp020.ino), escrito em C++ para Arduino e carregado pela **Arduino IDE**. Ele usa a biblioteca `LiquidCrystal_I2C` para o display (endereço I2C `0x27`; alguns módulos usam `0x3F`) e `avr/pgmspace.h` para guardar os dados na memória FLASH.
 
-| Estado | Comportamento | LEDs |
-|---|---|---|
-| `MENU` | Exibe a seleção e permite navegar pelas melodias | Ambos apagados |
-| `TOCANDO` | Reproduz a sequência de notas selecionada | Verde aceso |
-| `PAUSADO` | Interrompe o som e preserva a posição da reprodução | Vermelho aceso |
+**a) Armazenamento das músicas na memória FLASH**
 
-No menu, Play inicia a melodia selecionada. Durante a execução, o mesmo botão alterna entre reprodução e pausa. Stop tem prioridade sobre os demais comandos e retorna ao menu, mantendo a seleção atual.
+Cada música é um vetor de notas, e cada nota é uma estrutura com a **frequência** (Hz) e a **duração** (ms). A frequência `0` representa um silêncio. Os vetores usam `PROGMEM`, o que os mantém na memória FLASH (32 KB) em vez da RAM (2 KB). Os dados são lidos durante a execução com `memcpy_P`. Os nomes das músicas também ficam na FLASH.
 
-A temporização utiliza `millis()`, sem `delay()` na lógica de reprodução. Isso permite consultar os botões enquanto a música toca. Ao retomar uma pausa, o código compensa o tempo pausado para continuar a nota em andamento.
+```cpp
+struct Nota {
+  uint16_t frequencia;
+  uint16_t duracao;   // tempo total da nota, em milissegundos
+};
 
-Cada nota contém uma frequência em hertz e uma duração em milissegundos. Frequência zero representa silêncio. O programa prevê um intervalo de articulação de 8 ms ao final das notas, para distinguir notas consecutivas.
+const Nota brilha[] PROGMEM = { {262,600},{330,600},{294,600}, ... };
+```
 
-### 2.5. Uso da memória
+**b) Máquina de estados**
 
-O Arduino UNO possui 2 KB de SRAM. Para reduzir o consumo dessa memória, o código armazena as sequências de notas, os nomes e a tabela da biblioteca musical na FLASH com `PROGMEM`.
+O programa funciona como uma máquina de estados com três estados:
 
-A leitura utiliza `memcpy_P()`. Durante a execução, o programa copia para a RAM os dados necessários à reprodução e à exibição, em vez de carregar todas as melodias de uma vez.
+```mermaid
+stateDiagram-v2
+    [*] --> MENU
+    MENU --> TOCANDO: PLAY
+    TOCANDO --> PAUSADO: PLAY
+    PAUSADO --> TOCANDO: PLAY
+    TOCANDO --> MENU: STOP ou fim da música
+    PAUSADO --> MENU: STOP
+    MENU --> MENU: UP / DOWN
+```
 
-## 3. Execução do projeto
+| Estado | LED verde | LED vermelho | LCD |
+|---|:---:|:---:|---|
+| `MENU` | apagado | apagado | Duas músicas da lista, com `>` na selecionada |
+| `TOCANDO` | **aceso** | apagado | "Tocando" + nome da música |
+| `PAUSADO` | apagado | **aceso** | "Pausado" + nome da música |
 
-### 3.1. No Tinkercad
+O menu é circular: ao passar da última música com DOWN volta para a primeira, e o contrário com UP. O botão STOP tem prioridade sobre os demais.
 
-1. Abrir o circuito com Arduino UNO e LCD I2C compatível com MCP23008.
-2. Acessar **Código** e selecionar a edição em texto.
-3. Colar o sketch completo.
-4. Iniciar a simulação.
-5. Conferir o menu e executar os testes descritos na próxima seção.
+**c) Reprodução sem bloquear o programa**
 
-O sketch utiliza a biblioteca **Adafruit LiquidCrystal**, incluída pelo cabeçalho `Adafruit_LiquidCrystal.h`.
+Em vez de `delay()`, a reprodução usa `millis()`. A cada volta do `loop()` o programa verifica se a nota atual já terminou e, se sim, carrega a próxima, então os botões continuam respondendo durante a música. O som é gerado com `tone()` e interrompido com `noTone()`. Entre duas notas há um silêncio fixo de 8 ms (`INTERVALO_NOTAS_MS`), que separa notas repetidas sem cortar o som das notas longas. Para manter o ritmo constante, o início da nota seguinte é calculado somando a duração da nota anterior (`inicioNota += duracao`), sem acumular o atraso das voltas do `loop()`.
 
-### 3.2. Na Arduino IDE
+**d) Pausa e retomada**
 
-1. Instalar **Adafruit LiquidCrystal** pelo Gerenciador de Bibliotecas e as dependências solicitadas.
-2. Abrir o sketch e salvá-lo como `reprodutor_ccp020.ino`.
-3. Selecionar a placa **Arduino Uno** e a porta correspondente.
-4. Compilar e carregar o programa.
-5. Testar o circuito físico com a pinagem indicada.
+Ao pausar, o programa guarda o instante da pausa e silencia o buzzer. Ao retomar, soma o tempo parado a `inicioNota`, de modo que a nota continua de onde parou e a música segue da nota em que estava.
 
-**Compatibilidade do LCD:** esta versão utiliza MCP23008 no endereço 0x20, configurado no construtor como `lcd(0)`. Módulos físicos com **PCF8574**, comuns em 0x27 e 0x3F, exigem adaptação da biblioteca e do driver. Apenas alterar o endereço não resolve essa diferença.
+**e) Debounce dos botões**
 
-## 4. Experimentos e validação
+Cada botão tem um debounce por software: a leitura só é aceita depois de ficar estável por 30 ms, e o evento é gerado apenas quando o botão é pressionado (um clique = uma ação).
 
-A tabela abaixo é um **roteiro de testes**. Preencha a coluna de resultado somente após executar cada procedimento.
+#### Músicas
 
-| Teste | Procedimento | Resultado esperado | Resultado observado |
-|---|---|---|---|
-| Inicialização | Iniciar a simulação ou energizar a placa | Menu visível, buzzer silencioso e LEDs apagados | [Preencher] |
-| Navegação | Pressionar UP e DOWN | Seleção muda e circula entre as cinco músicas | [Preencher] |
-| Reprodução | Selecionar uma música e pressionar Play | Nome exibido, som no buzzer e LED verde aceso | [Preencher] |
-| Pausa | Pressionar Play/Pause enquanto toca | Som interrompido e LED vermelho aceso | [Preencher] |
-| Retomada | Pressionar Play/Pause novamente | Reprodução continua sem reiniciar a melodia | [Preencher] |
-| Stop | Pressionar Stop durante reprodução e pausa | Som interrompido, LEDs apagados e retorno ao menu | [Preencher] |
-| Fim da melodia | Aguardar a execução completa | Retorno automático ao menu | [Preencher] |
-| Biblioteca completa | Reproduzir Musica1 a Musica5 | Cada seleção executa sua própria sequência | [Preencher] |
-| Debounce | Realizar acionamentos individuais dos botões | Um evento por acionamento estável | [Preencher] |
+As cinco melodias são arranjos monofônicos (uma nota por vez, limitação do buzzer) com ritmos e contornos diferentes:
 
-### Evidências
+| # | Nome no menu | Características |
+|:---:|---|---|
+| 1 | Musica1 | Arpejos em Dó maior, andamento moderado |
+| 2 | Musica2 | Registro mais grave (262 a 392 Hz), notas longas e pausas |
+| 3 | Musica3 | Motivo agudo e mais rápido, com síncopas |
+| 4 | Musica4 | Ritmo ternário, notas mais longas no início da frase |
+| 5 | Musica5 | Sequência pentatônica com saltos e resposta descendente |
 
+<!-- [PREENCHER] Se trocar os nomes no menu (ate 15 letras) ou se as melodias forem baseadas em musicas conhecidas, informe aqui o nome e a fonte das notas. -->
 
-1. **Montagem geral:** [Inserir foto real e explicar as conexões principais.]
+---
 
+## 3. Experimentos
 
-A saída de `tone()` é uma onda quadrada; portanto, o timbre do buzzer não equivale ao de um instrumento musical. Qualidade sonora, ruídos e estabilidade devem ser avaliados no ambiente efetivamente utilizado.
+Mostre a sequência de funcionamento com fotos e uma breve explicação de cada etapa.
 
-## 5. Tecnologias utilizadas
+### 3.1 Menu inicial
 
-- **Arduino UNO / ATmega328P:** execução do programa e controle dos periféricos.
-- **C++ com framework Arduino:** implementação do sketch.
-- **Adafruit LiquidCrystal:** controle do LCD com expansor compatível.
-- **I2C:** comunicação com o display.
-- **`PROGMEM` e `memcpy_P()`:** armazenamento e leitura dos dados na FLASH.
-- **`tone()` e `noTone()`:** geração e interrupção do áudio.
-- **`millis()`:** temporização da reprodução e do debounce.
-- **Tinkercad Circuits:** montagem e simulação do circuito.
-- **Arduino IDE:** compilação e programação da placa física, quando utilizada.
-- **Git e GitHub:** versionamento e registro das contribuições.
+![Menu](imagens/01-menu.jpg)
 
-## 6. Conclusão
+[PREENCHER: explique o que aparece no LCD e como UP/DOWN movem o cursor.]
 
-A solução implementada integra seleção de melodias, reprodução monofônica, pausa, retomada e parada em uma interface com quatro botões e LCD. A máquina de estados separa o menu da reprodução e da pausa, enquanto os LEDs oferecem uma indicação visual do estado atual.
+### 3.2 Navegando pela lista
 
-O uso de `millis()` permite controlar a duração das notas sem bloquear a consulta aos botões. O armazenamento em FLASH preserva a SRAM limitada do Arduino UNO, e o debounce reduz eventos indesejados causados pela oscilação dos contatos.
+![Navegação](imagens/02-navegacao.jpg)
 
-Como melhorias futuras, podem ser considerados controle de volume com circuito apropriado, ajuste de andamento e ampliação da biblioteca musical.
+[PREENCHER]
 
-## 7. Versionamento e participação
+### 3.3 Música tocando
 
-Manter o repositório privado e adicionar os integrantes como colaboradores, conforme as orientações do projeto. Cada participante deve registrar contribuições próprias por meio de commits que representem a evolução real do trabalho.
+![Tocando](imagens/03-tocando.jpg)
 
+[PREENCHER: LCD mostrando "Tocando", LED verde aceso e buzzer ativo.]
 
-[Complementar com uma descrição fiel do uso de IA e da revisão realizada pela equipe.]
+### 3.4 Música pausada
+
+![Pausado](imagens/04-pausado.jpg)
+
+[PREENCHER: LCD mostrando "Pausado" e LED vermelho aceso.]
+
+### 3.5 Retorno ao menu (STOP)
+
+![Stop](imagens/05-stop.jpg)
+
+[PREENCHER]
+
+### 3.6 Vídeo de demonstração
+
+[PREENCHER: link do vídeo mostrando todas as funções, incluindo o som do buzzer.]
+
+### 3.7 Dificuldades encontradas
+
+<!-- [PREENCHER com o que realmente aconteceu no seu desenvolvimento. Exemplos: -->
+<!--  - LCD sem imagem: endereço I2C (0x27 ou 0x3F) e ajuste de contraste; -->
+<!--  - diferença entre a biblioteca do LCD no Tinkercad e na Arduino IDE; -->
+<!--  - buzzer sem som por ser ativo, ou pino diferente entre código e circuito; -->
+<!--  - botões ligados em pernas erradas. -->
+
+---
+
+## 4. Tecnologias utilizadas
+
+- **Arduino UNO** (ATmega328P)
+- **C++ para Arduino**, com a **Arduino IDE**
+- Bibliotecas: `LiquidCrystal_I2C`, `Wire`, `avr/pgmspace.h`
+- **Tinkercad Circuits** – simulação do circuito [PREENCHER: apague se não usou]
+- **Git e GitHub** – versionamento do código e deste relatório
+
+---
+
+## 5. Conclusão
+
+[PREENCHER com suas palavras: descreva de forma detalhada como o problema foi resolvido.]
+
+Pontos que a conclusão deve cobrir:
+
+1. **Como as músicas foram guardadas** e por que `PROGMEM` foi necessário (limite de 2 KB de RAM).
+2. **Como o menu e os estados** (`MENU`, `TOCANDO`, `PAUSADO`) foram organizados.
+3. **Como a música toca sem travar os botões** (uso de `millis()` no lugar de `delay()`) e como o ritmo foi mantido constante.
+4. **Como pausa e retomada preservam a posição** na música.
+5. **Como os requisitos do enunciado foram atendidos**: 5 músicas, 4 botões, LEDs de estado, buzzer e LCD 16x2.
+6. **Resultados dos testes** (use o uso de memória que a Arduino IDE informa ao compilar: [PREENCHER]) e possíveis melhorias (mais músicas, repetição automática, controle de volume, tempo da música no LCD).
+
+---
+
+## 6. Como executar
+
+1. Monte o circuito conforme a tabela de pinos.
+2. Na Arduino IDE, instale a biblioteca **LiquidCrystal I2C** (Sketch → Incluir Biblioteca → Gerenciar Bibliotecas).
+3. Abra `reprodutor_ccp020/reprodutor_ccp020.ino`, selecione a placa **Arduino Uno** e a porta, e carregue o programa.
+4. Use **UP/DOWN** para escolher a música e **PLAY** para iniciar.
+
+Se o LCD não mostrar nada, ajuste o contraste no potenciômetro atrás do módulo I2C ou troque o endereço `0x27` por `0x3F` em `ENDERECO_LCD`.
+
+## 7. Estrutura do repositório
+
+```
+.
+├── README.md
+├── reprodutor_ccp020/
+│   └── reprodutor_ccp020.ino
+└── imagens/
+    ├── projeto-montado.jpg
+    └── ... (fotos dos experimentos)
+```
+
+## 8. Referências
+
+- Documentação oficial do Arduino: https://docs.arduino.cc
+- Biblioteca LiquidCrystal I2C: https://www.arduino.cc/reference/en/libraries/liquidcrystal-i2c/
+- Material da disciplina CCP020 (slides do Prof. Isaac)
+- [PREENCHER: fonte das notas das músicas, se houver]
