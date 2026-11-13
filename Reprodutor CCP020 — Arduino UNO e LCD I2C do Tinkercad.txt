@@ -1,29 +1,7 @@
-// CCP020 - Reprodutor musical para Arduino UNO / Arduino IDE
-// Salve o sketch como reprodutor_ccp020.ino.
-// Na IDE, instale a biblioteca Adafruit LiquidCrystal pelo Gerenciador
-// de Bibliotecas e aceite instalar as dependencias solicitadas.
-// Selecione a placa Arduino Uno e a porta da placa antes de carregar.
-//
-// LCD: esta versao usa expansor MCP23008 em 0x20, como no Tinkercad.
-// ATENCAO: LCDs fisicos com PCF8574 (comuns em 0x27/0x3F) precisam
-// de outra biblioteca/driver; mudar somente o endereco nao resolve.
-// LCD: VCC -> 5V; GND -> GND; SDA -> A4; SCL -> A5.
-// Botoes INPUT_PULLUP: pressionado = LOW; ligar cada botao ao GND.
-// LEDs: usar resistor em serie (220 a 330 ohms), catodo ao GND.
-// Usar piezo/buzzer PASSIVO: positivo no pino 10, negativo ao GND.
-// Nao ligar alto-falante de baixa impedancia diretamente ao Arduino.
-// Revise, teste e compreenda o codigo antes da apresentacao.
-
-// Cabecalhos usados nesta versao para o Tinkercad.
-// O ambiente Arduino ja inclui Arduino.h automaticamente.
-#include <Adafruit_LiquidCrystal.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
 #include <avr/pgmspace.h>
 
-// 0 = endereco padrao do expansor MCP23008 (0x20).
-// Nao e o endereco 0x27 de modulos PCF8574.
-Adafruit_LiquidCrystal lcd(0);
-
-// Pinagem informada pelo usuario. Confira os terminais no circuito.
 const byte PIN_UP = 5;
 const byte PIN_DOWN = 4;
 const byte PIN_PLAY = 3;
@@ -32,29 +10,14 @@ const byte PIN_LED_VERDE = 9;
 const byte PIN_LED_VERMELHO = 8;
 const byte PIN_BUZZER = 10;
 
-// Frequencias sem nomes A4/A5, pois esses nomes ja identificam pinos.
-const uint16_t DO4 = 262;
-const uint16_t RE4 = 294;
-const uint16_t MI4 = 330;
-const uint16_t FA4 = 349;
-const uint16_t SOL4 = 392;
-const uint16_t LA4 = 440;
-const uint16_t SI4 = 494;
-const uint16_t DO5 = 523;
-const uint16_t RE5 = 587;
-const uint16_t MI5 = 659;
-const uint16_t SOL3 = 196;
-
 struct Nota {
   uint16_t frequencia;
   uint16_t duracao;  // Tempo total da nota, em milissegundos.
 };
 
-// Cinco novas melodias monofonicas, com ritmos e contornos distintos.
-// Os nomes internos dos vetores foram preservados por compatibilidade;
-// as melodias abaixo NAO sao mais os arranjos das cancoes anteriores.
+// Cinco melodias monofonicas, com ritmos e contornos distintos.
 // Cada par representa {frequencia em Hz, duracao em ms}; 0 = silencio.
-// Todos os vetores continuam na FLASH com PROGMEM.
+// Todos os vetores ficam na FLASH com PROGMEM.
 
 // Musica1: arpejos em Do maior, andamento moderado.
 const Nota parabens[] PROGMEM = {
@@ -64,7 +27,7 @@ const Nota parabens[] PROGMEM = {
   {880,360},{784,360},{659,360},{587,360},{523,1080}
 };
 
-// Musica2: nova melodia em registro mais grave (262 a 392 Hz).
+// Musica2: melodia em registro mais grave (262 a 392 Hz).
 const Nota brilha[] PROGMEM = {
   {262,600},{330,600},{294,600},{262,900},{0,150},
   {294,600},{349,600},{330,600},{294,900},{0,150},
@@ -100,7 +63,7 @@ const Nota londonBridge[] PROGMEM = {
   {784,280},{880,280},{988,560},{784,280},{659,1120}
 };
 
-// Nomes tambem na memoria de programa.
+// Nomes tambem na memoria de programa (ate 15 letras: o ">" ocupa 1 coluna).
 const char nomes[5][17] PROGMEM = {
   "Musica1",
   "Musica2",
@@ -195,8 +158,7 @@ void mostrarReproducao() {
   escreverNome(selecionada);
 }
 
-// Pequena articulacao fixa: evita os cortes longos de 10% por nota.
-// Uma nota de 900 ms agora tem apenas 8 ms de silencio, nao 90 ms.
+// Pequena articulacao fixa: o silencio entre notas dura so 8 ms.
 const uint16_t INTERVALO_NOTAS_MS = 8;
 
 unsigned long duracaoSom() {
@@ -213,7 +175,6 @@ void silenciar() {
 
 void carregarNota() {
   memcpy_P(&notaAtual, musicaAtual.notas + indiceNota, sizeof(Nota));
-  // Evita chamar noTone() desnecessariamente antes de cada tone().
   // O silencio de articulacao e controlado em atualizarReproducao().
   if (notaAtual.frequencia > 0) {
     tone(PIN_BUZZER, notaAtual.frequencia);
@@ -284,8 +245,9 @@ void setup() {
   pinMode(PIN_LED_VERMELHO, OUTPUT);
   pinMode(PIN_BUZZER, OUTPUT);
 
-  lcd.begin(16, 2);
-  lcd.setBacklight(HIGH);
+  lcd.init();       // biblioteca LiquidCrystal_I2C: init() no lugar de begin()
+  lcd.backlight();  // liga a luz de fundo
+
   silenciar();
   atualizarLeds();
   mostrarMenu();
