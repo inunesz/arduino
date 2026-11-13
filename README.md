@@ -216,23 +216,5 @@ Pontos que a conclusão deve cobrir:
 3. Abra `reprodutor_ccp020/reprodutor_ccp020.ino`, selecione a placa **Arduino Uno** e a porta, e carregue o programa.
 4. Use **UP/DOWN** para escolher a música e **PLAY** para iniciar.
 
-Se o LCD não mostrar nada, ajuste o contraste no potenciômetro atrás do módulo I2C ou troque o endereço `0x27` por `0x3F` em `ENDERECO_LCD`.
 
-## 7. Estrutura do repositório
 
-```
-.
-├── README.md
-├── reprodutor_ccp020/
-│   └── reprodutor_ccp020.ino
-└── imagens/
-    ├── projeto-montado.jpg
-    └── ... (fotos dos experimentos)
-```
-
-## 8. Referências
-
-- Documentação oficial do Arduino: https://docs.arduino.cc
-- Biblioteca LiquidCrystal I2C: https://www.arduino.cc/reference/en/libraries/liquidcrystal-i2c/
-- Material da disciplina CCP020 (slides do Prof. Isaac)
-- [PREENCHER: fonte das notas das músicas, se houver]
