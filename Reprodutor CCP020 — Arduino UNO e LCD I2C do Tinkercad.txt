@@ -28,7 +28,7 @@ const Nota parabens[] PROGMEM = {
 };
 
 // Musica2: melodia em registro mais grave (262 a 392 Hz).
-const Nota brilha[] PROGMEM = {
+const Musica1[] PROGMEM = {
   {262,600},{330,600},{294,600},{262,900},{0,150},
   {294,600},{349,600},{330,600},{294,900},{0,150},
   {330,600},{392,600},{349,600},{330,900},{0,150},
@@ -36,7 +36,7 @@ const Nota brilha[] PROGMEM = {
 };
 
 // Musica3: motivo agudo e mais rapido, com sincopas.
-const Nota alegria[] PROGMEM = {
+const Musica2[] PROGMEM = {
   {784,240},{988,240},{1175,480},{988,240},{880,480},
   {784,240},{880,240},{988,480},{659,480},{0,120},
   {740,240},{880,240},{1047,480},{880,240},{784,480},
@@ -44,7 +44,7 @@ const Nota alegria[] PROGMEM = {
 };
 
 // Musica4: ritmo ternario, com notas mais longas no inicio da frase.
-const Nota freiJacques[] PROGMEM = {
+const Musica3[] PROGMEM = {
   {698,600},{880,300},{1047,300},
   {932,600},{784,300},{698,300},
   {659,600},{784,300},{1047,300},
@@ -78,11 +78,11 @@ struct Musica {
 };
 
 const Musica biblioteca[] PROGMEM = {
-  {parabens, sizeof(parabens) / sizeof(parabens[0])},
-  {brilha, sizeof(brilha) / sizeof(brilha[0])},
-  {alegria, sizeof(alegria) / sizeof(alegria[0])},
-  {freiJacques, sizeof(freiJacques) / sizeof(freiJacques[0])},
-  {londonBridge, sizeof(londonBridge) / sizeof(londonBridge[0])}
+  {Musica1, sizeof(Musica1) / sizeof(Musica1[0])},
+  {Musica2, sizeof(Musica2) / sizeof(Musica2[0])},
+  {Musica3, sizeof(Musica3) / sizeof(Musica3[0])},
+  {Musica4, sizeof(Musica4) / sizeof(Musica4[0])},
+  {Musica5, sizeof(Musica5) / sizeof(Musica5[0])}
 };
 const byte TOTAL_MUSICAS = sizeof(biblioteca) / sizeof(biblioteca[0]);
 
