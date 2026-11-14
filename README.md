@@ -138,49 +138,8 @@ As cinco melodias são arranjos monofônicos (uma nota por vez, limitação do b
 
 ## 3. Experimentos
 
-Mostre a sequência de funcionamento com fotos e uma breve explicação de cada etapa.
+ Link do video do arduino em funcionamento: https://youtu.be/nFF1KvU59IY
 
-### 3.1 Menu inicial
-
-![Menu](imagens/01-menu.jpg)
-
-[PREENCHER: explique o que aparece no LCD e como UP/DOWN movem o cursor.]
-
-### 3.2 Navegando pela lista
-
-![Navegação](imagens/02-navegacao.jpg)
-
-[PREENCHER]
-
-### 3.3 Música tocando
-
-![Tocando](imagens/03-tocando.jpg)
-
-[PREENCHER: LCD mostrando "Tocando", LED verde aceso e buzzer ativo.]
-
-### 3.4 Música pausada
-
-![Pausado](imagens/04-pausado.jpg)
-
-[PREENCHER: LCD mostrando "Pausado" e LED vermelho aceso.]
-
-### 3.5 Retorno ao menu (STOP)
-
-![Stop](imagens/05-stop.jpg)
-
-[PREENCHER]
-
-### 3.6 Vídeo de demonstração
-
-[PREENCHER: link do vídeo mostrando todas as funções, incluindo o som do buzzer.]
-
-### 3.7 Dificuldades encontradas
-
-<!-- [PREENCHER com o que realmente aconteceu no seu desenvolvimento. Exemplos: -->
-<!--  - LCD sem imagem: endereço I2C (0x27 ou 0x3F) e ajuste de contraste; -->
-<!--  - diferença entre a biblioteca do LCD no Tinkercad e na Arduino IDE; -->
-<!--  - buzzer sem som por ser ativo, ou pino diferente entre código e circuito; -->
-<!--  - botões ligados em pernas erradas. -->
 
 ---
 
