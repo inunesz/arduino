@@ -62,11 +62,6 @@ Aparelhos como os antigos MP3 players permitem escolher uma música em uma lista
 - O buzzer tem o terminal negativo no GND.
 - Todos os GNDs (LCD, LEDs, botões e buzzer) estão ligados ao GND do Arduino.
 
-**Foto do projeto montado:**
-
-![Projeto montado](imagens/projeto-montado.jpg)
-<!-- [PREENCHER] Foto do seu circuito montado -->
-
 
 #### Desenvolvimento do software
 
@@ -132,7 +127,6 @@ As cinco melodias são arranjos monofônicos (uma nota por vez, limitação do b
 | 4 | Musica4 | Ritmo ternário, notas mais longas no início da frase |
 | 5 | Musica5 | Sequência pentatônica com saltos e resposta descendente |
 
-<!-- [PREENCHER] Se trocar os nomes no menu (ate 15 letras) ou se as melodias forem baseadas em musicas conhecidas, informe aqui o nome e a fonte das notas. -->
 
 ---
 
@@ -155,7 +149,6 @@ As cinco melodias são arranjos monofônicos (uma nota por vez, limitação do b
 
 ## 5. Conclusão
 
-[PREENCHER com suas palavras: descreva de forma detalhada como o problema foi resolvido.]
 
 Pontos que a conclusão deve cobrir:
 
