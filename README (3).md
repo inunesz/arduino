@@ -142,7 +142,6 @@ As cinco melodias são arranjos monofônicos (uma nota por vez, limitação do b
 - **Arduino UNO** (ATmega328P)
 - **C++ para Arduino**, com a **Arduino IDE**
 - Bibliotecas: `LiquidCrystal_I2C`, `Wire`, `avr/pgmspace.h`
-- **Tinkercad Circuits** – simulação do circuito [PREENCHER: apague se não usou]
 - **Git e GitHub** – versionamento do código e deste relatório
 
 ---
