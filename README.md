@@ -133,6 +133,7 @@ As cinco melodias são arranjos monofônicos (uma nota por vez, limitação do b
 ## 3. Experimentos
 
  Link do video do arduino em funcionamento: https://youtu.be/nFF1KvU59IY
+ Foto: https://drive.google.com/file/d/1yw5Jk2PUYbHG06rXX5LHBxhr-mleeKdW/view?usp=sharing
 
 
 ---
